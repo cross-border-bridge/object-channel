@@ -5,10 +5,10 @@
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "dependencies": {
-    "@cross-border-bridge/function-channel": "~2.0.0"
+    "@cross-border-bridge/function-channel": "~2.1.0"
   },
   "peerDependencies": {
-    "@cross-border-bridge/function-channel": "~2.0.0"
+    "@cross-border-bridge/function-channel": "~2.1.0"
   },
   "devDependencies": {
     "del": "*",
