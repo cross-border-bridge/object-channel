@@ -2,6 +2,10 @@
 
 describe("ObjectChannelSpec", function() {
     var oc = require("../lib/ObjectChannel.js");
+    var fc = require("../node_modules/@cross-border-bridge/function-channel/lib/index.js");
+    var dc = require("../node_modules/@cross-border-bridge/data-channel/lib/index.js");
+    var db = require("../node_modules/@cross-border-bridge/memory-queue-data-bus/lib/index.js");
+    var mq = require("../node_modules/@cross-border-bridge/memory-queue/lib/index.js");
     var dummyFunctionChannel = new Object();
     var objectChannel;
     var remoteObject;
@@ -219,5 +223,64 @@ describe("ObjectChannelSpec", function() {
         objectChannel.unbind();
         objectChannel.create();
         objectChannel.destroy();
+    });
+
+    it("combined-test", function() {
+        var mq1 = new mq.MemoryQueue();
+        var mq2 = new mq.MemoryQueue();
+
+        // 送信側ObjectChannelを作成
+        var dataBusS = new db.MemoryQueueDataBus(mq1, mq2);
+        var dataChannelS = new dc.DataChannel(dataBusS);
+        var functionChannelS = new fc.FunctionChannel(dataChannelS);
+        var objectChannelS = new oc.ObjectChannel(functionChannelS);
+
+        // 受信側ObjectChannelを作成
+        var dataBusR = new db.MemoryQueueDataBus(mq2, mq1);
+        var dataChannelR = new dc.DataChannel(dataBusR);
+        var functionChannelR = new fc.FunctionChannel(dataChannelR);
+        var objectChannelR = new oc.ObjectChannel(functionChannelR);
+
+        // 受信側ObjectChannelに登録するクラス(MyClassJS)を準備
+        var MyClassJS = (function() {
+            function MyClassJS() {}
+            MyClassJS.prototype.foo = function(a1, a2, a3) {
+                return a1 + a2 + a3;
+            };
+            MyClassJS.prototype.fooA = function(a1, a2, a3) {
+                return function(callback) {
+                    callback(a1 + a2 + a3);
+                }
+            };
+            return MyClassJS;
+        })();
+        objectChannelR.bind(MyClassJS);
+
+        // 送信側からMyClassJSをインスタンス化
+        objectChannelS.create("MyClassJS", [], function(error, remoteObject) {
+            // fooを実行
+            remoteObject.invoke("foo", ["One", "Two", "Three"], function(error, result) {
+                console.log("foo: " + result);
+                expect("OneTwoThree").toEqual(result);
+            });
+            // fooAを実行
+            remoteObject.invoke("fooA", ["Ichi", "Ni", "Sun"], function(error, result) {
+                console.log("fooA: " + result);
+                expect("IchiNiSun").toEqual(result);
+            });
+            // 破棄
+            remoteObject.destroy();
+        });
+
+        // 破棄
+        objectChannelR.unbind(MyClassJS);
+        objectChannelR.destroy();
+        functionChannelR.destroy();
+        dataChannelR.destroy();
+        dataBusR.destroy();
+        objectChannelS.destroy();
+        functionChannelS.destroy();
+        dataChannelS.destroy();
+        dataBusS.destroy();
     });
 });
