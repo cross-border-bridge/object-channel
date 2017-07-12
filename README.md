@@ -6,7 +6,7 @@
 ### package.json
 ```
     "dependencies": {
-        "@cross-border-bridge/object-channel": "~2.0.0"
+        "@cross-border-bridge/object-channel": "~2.1.0"
     },
 ```
 
